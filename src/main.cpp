@@ -109,28 +109,69 @@ int main() {
 
           bool too_close = false;
 
+          // Analysing other cars positions.
+          bool car_ahead = false;
+          bool car_left = false;
+          bool car_right = false;
+
           //find ref_v to use
           for(int i=0; i< sensor_fusion.size(); i++)
           {
-            //Car is in my lane
+            //Find which lane the car detected is in
             float d = sensor_fusion[i][6];
-            if( d<(2+4*lane+2) && d>(2+4*lane-2) ) // checking if the car in front of us is in our lane
-            {
-              double vx = sensor_fusion[i][3];
-              double vy = sensor_fusion[i][4];
-              double check_speed = sqrt(vx*vx + vy*vy);
-              double check_car_s = sensor_fusion[i][5];
-              //if using previous points can project s values out
-              check_car_s +=((double)prev_size*0.02*check_speed);
-              //check s values greater that mine and s gap (if the car is too close to us (30 m))
-              if((check_car_s>car_s) && ((check_car_s-car_s)<30))
-              {
-                //Do some logic here,lower reference velocity so we dont crash into the car infront of us
-                // Also flag to try to change lanes.
-                //ref_vel = 29.5; //mph
-                too_close = true;
+            int car_lane = -1;
+
+            if ( d > 0 && d < 4 ) {
+              car_lane = 0;
+            } else if ( d > 4 && d < 8 ) {
+              car_lane = 1;
+            } else if ( d > 8 && d < 12 ) {
+              car_lane = 2;
+            }
+            if (car_lane < 0) {
+              continue;
+            }
+
+            // next is finding speed of the detected car
+            double vx = sensor_fusion[i][3];
+            double vy = sensor_fusion[i][4];
+            double check_speed = sqrt(vx*vx + vy*vy);
+            double check_car_s = sensor_fusion[i][5];
+            //Estimate car s position after executing previous trajectory.
+            check_car_s +=((double)prev_size*0.02*check_speed);
+
+            // Detecting cars around us so we can undertand which action to make
+            if ( car_lane == lane ) {
+              // Car in our lane.
+              car_ahead |= check_car_s > car_s && check_car_s - car_s < 30;
+            } else if ( car_lane - lane == -1 ) {
+              // Car left
+              car_left |= car_s - 30 < check_car_s && car_s + 30 > check_car_s;
+            } else if ( car_lane - lane == 1 ) {
+              // Car right
+              car_right |= car_s - 30 < check_car_s && car_s + 30 > check_car_s;
+            }
+          }
+          
+          // Now that we have the detected car info, time to make a dicision
+
+          if ( car_ahead ) { // Car ahead
+            if ( !car_left && lane > 0 ) {
+              // if there is no car left and there is a left lane.
+              lane--; // Change lane left.
+            } else if ( !car_right && lane != 2 ){
+              // if there is no car right and there is a right lane.
+              lane++; // Change lane right.
+            } else {
+              too_close = true;
+            }
+          } else {
+            if ( lane != 1 ) { // if we are not on the center lane.
+              if ( ( lane == 0 && !car_right ) || ( lane == 2 && !car_left ) ) {
+                lane = 1; // Back to center.
               }
             }
+
           }
 
           // Create a list of widely spaced (x,y) waypoints. Evenly spaced at 30m
