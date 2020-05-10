@@ -132,15 +132,6 @@ int main() {
               }
             }
           }
-          //Slowly slowing down if a car is close, instead of an instant change in velocity
-          if(too_close)
-          {
-            ref_vel -= 0.224; // almost 5 m/s_squared
-          }
-          else if(ref_vel < 49.5) // speeding up if we are slow and no car infront of us
-          {
-            ref_vel += 0.224;
-          }
 
           // Create a list of widely spaced (x,y) waypoints. Evenly spaced at 30m
          // Later these points will be interpolated with a spline and fill it in with more points
@@ -237,6 +228,17 @@ int main() {
           // fill up the rest of our path planner after filling it with previous points. here we will always output 50 points
           for(int i = 1; i <= 50-previous_path_x.size(); i++)
           {
+            
+            //Slowly slowing down if a car is close, instead of an instant change in velocity
+            if(too_close)
+            {
+              ref_vel -= 0.224; // almost 5 m/s_squared
+            }
+            else if(ref_vel < 49.5) // speeding up if we are slow and no car infront of us
+            {
+              ref_vel += 0.224;
+            }
+
             double N = (target_dist/(0.02*ref_vel/2.24)); //2.24 to convert velocity to m/s
             double x_point = x_add_on+(target_x)/N;
             double y_point = s(x_point);
