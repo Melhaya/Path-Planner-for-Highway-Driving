@@ -54,7 +54,7 @@ int main() {
   }
   //////////////////////////////////////////////// current lane and refrence velocity
 
-  double ref_vel = 49.5; //mph (having a reference velocity to target)
+  double ref_vel = 0.0; //mph (having a reference velocity to target)
   int lane = 1; // 0 (far left) 1 (middle lane) 2(far right)
 
   ////////////////////////////////////////////////
@@ -127,10 +127,19 @@ int main() {
               {
                 //Do some logic here,lower reference velocity so we dont crash into the car infront of us
                 // Also flag to try to change lanes.
-                ref_vel = 29.5; //mph
-                //too_close = true;
+                //ref_vel = 29.5; //mph
+                too_close = true;
               }
             }
+          }
+          //Slowly slowing down if a car is close, instead of an instant change in velocity
+          if(too_close)
+          {
+            ref_vel -= 0.224; // almost 5 m/s_squared
+          }
+          else if(ref_vel < 49.5) // speeding up if we are slow and no car infront of us
+          {
+            ref_vel += 0.224;
           }
 
           // Create a list of widely spaced (x,y) waypoints. Evenly spaced at 30m
