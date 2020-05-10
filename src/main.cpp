@@ -101,6 +101,38 @@ int main() {
           // previous path size which helps during a transition
           int prev_size = previous_path_x.size();
 
+          // This part is to avoid the car from hitting other cars
+          if(prev_size >0)
+          {
+            car_s = end_path_s;
+          }
+
+          bool too_close = false;
+
+          //find ref_v to use
+          for(int i=0; i< sensor_fusion.size(); i++)
+          {
+            //Car is in my lane
+            float d = sensor_fusion[i][6];
+            if( d<(2+4*lane+2) && d>(2+4*lane-2) ) // checking if the car in front of us is in our lane
+            {
+              double vx = sensor_fusion[i][3];
+              double vy = sensor_fusion[i][4];
+              double check_speed = sqrt(vx*vx + vy*vy);
+              double check_car_s = sensor_fusion[i][5];
+              //if using previous points can project s values out
+              check_car_s +=((double)prev_size*0.02*check_speed);
+              //check s values greater that mine and s gap (if the car is too close to us (30 m))
+              if((check_car_s>car_s) && ((check_car_s-car_s)<30))
+              {
+                //Do some logic here,lower reference velocity so we dont crash into the car infront of us
+                // Also flag to try to change lanes.
+                ref_vel = 29.5; //mph
+                //too_close = true;
+              }
+            }
+          }
+
           // Create a list of widely spaced (x,y) waypoints. Evenly spaced at 30m
          // Later these points will be interpolated with a spline and fill it in with more points
           vector<double> ptsx;
